@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  ddpm-train:
+    build: .
+    container_name: ddpm-training
+    
+    # For CPU-only, remove the runtime and gpus sections
+    # Uncomment the lines below if you have NVIDIA GPU with docker
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    
+    volumes:
+      # Mount source code for development
+      - .:/workspace
+      # Mount data directory to persist downloaded datasets
+      - ./data:/workspace/data
+      # Mount results directory to persist outputs
+      - ./results:/workspace/results
+    
+    environment:
+      # Set Python to not buffer output
+      - PYTHONUNBUFFERED=1
+    
+    # Run training by default
+    command: python src/train.py --config configs/default.yaml
+
+  # Optional: Service for sampling from a trained model
+  ddpm-sample:
+    build: .
+    container_name: ddpm-sampling
+    
+    volumes:
+      - .:/workspace
+      - ./data:/workspace/data
+      - ./results:/workspace/results
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+    
+    # Override command to run sampling instead of training
+    command: python src/sample.py --checkpoint results/checkpoints/best.pt --num_samples 64
+    
+    # Don't start this service by default
+    profiles:
+      - sample

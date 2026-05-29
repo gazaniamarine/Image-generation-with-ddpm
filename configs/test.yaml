@@ -1,0 +1,60 @@
+# Quick test configuration for DDPM training
+
+# Data configuration
+data:
+  dataset: "cifar10"
+  image_size: 32
+  batch_size: 64  # Smaller for testing
+  num_workers: 2
+  normalize_to: "[-1, 1]"
+
+# Model architecture (smaller for quick test)
+model:
+  model_type: "unet"
+  in_channels: 3
+  out_channels: 3
+  model_channels: 64  # Smaller for quick test
+  channel_mult: [1, 2, 2]  # One less level
+  num_res_blocks: 1  # One res block
+  attention_resolutions: [16]
+  num_heads: 4
+  num_head_channels: -1
+
+# Diffusion process
+diffusion:
+  num_timesteps: 1000
+  beta_schedule: "linear"
+  beta_start: 0.0001
+  beta_end: 0.02
+  clip_denoised: true
+  predict_noise: true
+
+# Training configuration (quick test)
+training:
+  num_epochs: 2  # Just 2 epochs for testing
+  learning_rate: 0.0001
+  weight_decay: 0.0
+  ema_decay: 0.9999
+  use_ema: false
+  gradient_clip: 1.0
+  save_interval: 1
+  sample_interval: 1
+  num_sample_batches: 1
+  device: "auto"
+  seed: 42
+  resume_checkpoint: null
+
+# Sampling configuration
+sampling:
+  num_samples: 16
+  checkpoint_path: "results/checkpoints/best.pt"
+  save_gif: false
+  num_gif_steps: 50
+  device: "auto"
+  seed: 42
+
+# Output directories
+results_dir: "results"
+checkpoint_dir: "results/checkpoints"
+sample_dir: "results/samples"
+plot_dir: "results/plots"
