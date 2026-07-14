@@ -185,19 +185,26 @@ class Diffusion:
         """
         if clip_denoised is None:
             clip_denoised = self.clip_denoised
-        
+
         batch_size = x_t.shape[0]
-        
+
         # Predict noise
         pred_noise = model(x_t, t)
-        
-        # Get posterior mean and variance
+
+        # Recover predicted x_0 from the noise prediction:
+        # x_0 = (x_t - sqrt(1 - alpha_cumprod_t) * eps) / sqrt(alpha_cumprod_t)
+        sqrt_alphas_cumprod = self.schedule.sqrt_alphas_cumprod[t].view(batch_size, 1, 1, 1)
+        sqrt_one_minus_alphas_cumprod = self.schedule.sqrt_one_minus_alphas_cumprod[t].view(batch_size, 1, 1, 1)
+        x_0_pred = (x_t - sqrt_one_minus_alphas_cumprod * pred_noise) / sqrt_alphas_cumprod
+
+        if clip_denoised:
+            x_0_pred = x_0_pred.clamp(-1.0, 1.0)
+
+        # Posterior mean: q(x_{t-1} | x_t, x_0) = coef1 * x_0 + coef2 * x_t
         coef1 = self.schedule.posterior_mean_coef1[t].view(batch_size, 1, 1, 1)
         coef2 = self.schedule.posterior_mean_coef2[t].view(batch_size, 1, 1, 1)
-        
-        # Compute mean
-        mean = coef1 * x_t + coef2 * pred_noise
-        
+        mean = coef1 * x_0_pred + coef2 * x_t
+
         # Add noise for all steps except the last
         if t.min().item() > 0:
             posterior_var = self.schedule.posterior_variance[t].view(batch_size, 1, 1, 1)
@@ -205,10 +212,7 @@ class Diffusion:
             x_prev = mean + torch.sqrt(posterior_var) * noise
         else:
             x_prev = mean
-        
-        if clip_denoised:
-            x_prev = x_prev.clamp(-1.0, 1.0)
-        
+
         return x_prev
     
     def p_sample_loop(

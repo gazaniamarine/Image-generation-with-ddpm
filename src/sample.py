@@ -131,30 +131,27 @@ def main():
             print("Saving denoising process as GIF...")
             # Sample with return_all_timesteps to capture the denoising process
             all_images = diffusion.p_sample_loop(model, shape, return_all_timesteps=True)
-            
+
             # Sample every N steps for GIF to keep file size reasonable
             num_steps = all_images.shape[1]
             step_interval = max(1, num_steps // config.sampling.num_gif_steps)
             selected_steps = list(range(0, num_steps, step_interval))
-            
+
             # Take first sample
             selected_images = all_images[0, selected_steps]
-            
+
             gif_path = Path(args.output_dir) / "generation_process.gif"
             save_generation_gif(
                 [selected_images[i:i+1] for i in range(selected_images.shape[0])],
                 str(gif_path),
                 normalize_to=config.data.normalize_to,
             )
+
+            # Extract final images from all_images (avoid re-running the loop)
+            images = all_images[:, -1]
         else:
             # Just generate final images
             images = diffusion.p_sample_loop(model, shape)
-        
-        if not args.save_gif:
-            images = diffusion.p_sample_loop(model, shape)
-        else:
-            # Extract final images from all_images
-            images = all_images[:, -1]
     
     # Save images
     sample_path = Path(args.output_dir) / "samples.png"

@@ -129,7 +129,7 @@ def sample_images(
     model.eval()
     
     with torch.no_grad():
-        shape = (num_samples, config.data.in_channels, config.data.image_size, config.data.image_size)
+        shape = (num_samples, config.model.in_channels, config.data.image_size, config.data.image_size)
         images = diffusion.p_sample_loop(model, shape)
     
     return images
@@ -241,7 +241,7 @@ def main():
             
             losses.append(avg_loss)
             
-            # Save checkpoint
+            # Save periodic checkpoint
             if (epoch + 1) % config.training.save_interval == 0:
                 save_checkpoint(
                     model,
@@ -251,18 +251,18 @@ def main():
                     config.checkpoint_dir,
                     f"epoch_{epoch + 1}.pt",
                 )
-                
-                # Save best checkpoint
-                if avg_loss < best_loss:
-                    best_loss = avg_loss
-                    save_checkpoint(
-                        model,
-                        optimizer,
-                        epoch,
-                        avg_loss,
-                        config.checkpoint_dir,
-                        "best.pt",
-                    )
+
+            # Save best checkpoint (checked every epoch, independent of save_interval)
+            if avg_loss < best_loss:
+                best_loss = avg_loss
+                save_checkpoint(
+                    model,
+                    optimizer,
+                    epoch,
+                    avg_loss,
+                    config.checkpoint_dir,
+                    "best.pt",
+                )
             
             # Sample and save images
             if (epoch + 1) % config.training.sample_interval == 0:
