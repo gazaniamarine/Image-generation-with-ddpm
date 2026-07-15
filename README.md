@@ -2,6 +2,28 @@
 
 A clean, beginner-friendly implementation of Denoising Diffusion Probabilistic Models (DDPM) in PyTorch, trained on CIFAR-10. This project is designed to be easy to understand while maintaining GitHub-quality code standards.
 
+## ✅ Results
+
+Trained for 100 epochs (default config: 1000 timesteps, linear beta schedule, batch size 128, ~26M-parameter U-Net) on a single NVIDIA RTX A6000, ~3 hours total.
+
+**Forward diffusion process** — a real CIFAR-10 image progressively noised to t=999:
+
+![Forward diffusion process](assets/diffusion_process.png)
+
+**Training loss** (MSE between predicted and true noise) — converges from ~0.094 to ~0.030 and plateaus:
+
+![Training loss curve](assets/training_loss.png)
+
+**Generated samples over training** — unconditional generation from pure noise via the full 1000-step reverse process:
+
+| Epoch 5 | Epoch 50 | Epoch 100 |
+|---|---|---|
+| ![Epoch 5 samples](assets/samples_epoch_5.png) | ![Epoch 50 samples](assets/samples_epoch_50.png) | ![Epoch 100 samples](assets/samples_epoch_100.png) |
+
+By epoch 50, generated images already show recognizable CIFAR-10 structure (cars, horses, boats, birds, distinct color/shape coherence), holding steady through epoch 100. Final loss: 0.0303 (best checkpoint: 0.0296).
+
+Samples are still blurry and CIFAR-10 is a genuinely hard 32×32 unconditional-generation target for a model this size trained this briefly — see the **Future Improvements** section below (EMA, more epochs, FID evaluation) for the natural next steps to sharpen this further.
+
 ## 📖 What are Diffusion Models?
 
 Diffusion models are a class of generative models that generate images by reversing a noise corruption process. They work in two phases:
@@ -55,15 +77,17 @@ cifar10-ddpm/
 │   ├── sample.py              # Sampling/generation script
 │   ├── utils.py               # Utilities and visualization
 │   └── __init__.py
-├── notebooks/
-│   └── demo.ipynb            # Interactive demo notebook
-├── results/
+├── tests/
+│   └── test_diffusion.py     # Smoke/regression tests for the diffusion math and model
+├── assets/                    # Real generated images embedded in this README
+├── results/                   # Generated at runtime (gitignored)
 │   ├── checkpoints/          # Saved model checkpoints
 │   ├── samples/              # Generated sample images
 │   └── plots/                # Training curves and visualizations
 ├── Dockerfile                 # Docker configuration
 ├── docker-compose.yml         # Docker Compose configuration
 ├── requirements.txt           # Python dependencies
+├── requirements-dev.txt       # Adds pytest for running tests/
 ├── .dockerignore              # Files to ignore in Docker
 ├── .gitignore                 # Files to ignore in Git
 └── README.md                  # This file
@@ -79,7 +103,7 @@ cifar10-ddpm/
 ### 2. **U-Net Model** (`src/model.py`)
 - Small U-Net suitable for 32×32 CIFAR-10 images
 - Features: residual blocks, attention mechanisms, timestep embeddings
-- ~40M parameters - fast training and inference
+- ~26M parameters with the default config — fast training and inference
 
 ### 3. **Dataset** (`src/dataset.py`)
 - Loads CIFAR-10 from torchvision
@@ -148,6 +172,13 @@ open results/samples/samples.png
 open results/samples/samples_epoch_50.png
 ```
 
+#### 5. **Run Tests**
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+Smoke/regression tests for the diffusion forward/reverse process and U-Net forward pass — no GPU or dataset download required.
+
 ### With Docker
 
 #### 1. **Build and Run Training**
@@ -205,18 +236,21 @@ training:
 
 ## 📊 Training Monitoring
 
-During training, you'll see:
+During training, you'll see (actual output from a real 100-epoch run):
 
 ```
-Epoch [1/100] Loss: 0.052346
-Epoch [2/100] Loss: 0.045231
+Epoch 1/100 - Loss: 0.093633
+Epoch 2/100 - Loss: 0.043995
+Epoch 3/100 - Loss: 0.040757
 ...
-Epoch [100/100] Loss: 0.012453
+Epoch 99/100 - Loss: 0.030216
+Epoch 100/100 - Loss: 0.030290
 
 Training completed!
-Checkpoints saved to: results/checkpoints/
-Samples saved to: results/samples/
-Plots saved to: results/plots/
+Best loss: 0.029555
+Checkpoints saved to: results/checkpoints
+Samples saved to: results/samples
+Plots saved to: results/plots
 ```
 
 ### Generated Artifacts
@@ -229,15 +263,10 @@ Plots saved to: results/plots/
 
 ## 🎯 Expected Results
 
-After training for 100 epochs on a GPU:
-
-- **Training time**: ~2-4 hours on RTX 3060, ~15+ minutes on A100
-- **Generated quality**: CIFAR-like images (recognizable objects, but noisy)
-- **Final loss**: ~0.01-0.02
-- **Image generation time**: ~10 seconds for 64 images
+Verified on this repo (see [Results](#-results) above): 100 epochs on a single **RTX A6000** took **~3 hours** and reached a **final loss of 0.0303** (best: 0.0296), with recognizable CIFAR-10 structure emerging by epoch 50. Training time on other GPUs will scale roughly with their throughput relative to an A6000 — expect it to take noticeably longer on older/consumer cards (e.g. RTX 3060-class) and faster on newer datacenter GPUs (A100/H100-class), but we haven't benchmarked those directly.
 
 ### Example Generated Images
-Generated samples look like CIFAR-10 classes (airplanes, cars, dogs, etc.) but are novel images not in the training set.
+Generated samples resemble CIFAR-10 classes (airplanes, cars, horses, boats, etc.) but are novel images not in the training set — see the sample grids in the [Results](#-results) section above.
 
 ## 📈 Advanced Usage
 

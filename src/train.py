@@ -293,7 +293,7 @@ def main():
                     timesteps = [100, 250, 500, 750, 999]
                     viz_path = Path(config.plot_dir) / "diffusion_process.png"
                     visualize_diffusion_process(
-                        x_0[0],
+                        x_0,
                         diffusion,
                         timesteps,
                         str(viz_path),
@@ -320,7 +320,7 @@ def main():
     # Plot training loss
     print("Plotting training loss...")
     plot_path = Path(config.plot_dir) / "training_loss.png"
-    plot_training_loss(losses, str(plot_path), config.training.save_interval)
+    plot_training_loss(losses, str(plot_path))
     
     print("\n" + "=" * 50)
     print("Training completed!")

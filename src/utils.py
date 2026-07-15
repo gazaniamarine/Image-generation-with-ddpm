@@ -165,19 +165,17 @@ def save_image_grid(
 def plot_training_loss(
     losses: List[float],
     plot_path: str,
-    save_interval: int = 10,
 ):
     """
     Plot training loss.
-    
+
     Args:
-        losses: List of loss values
+        losses: List of per-epoch loss values (one entry per epoch)
         plot_path: Path to save plot
-        save_interval: Interval at which losses were saved
     """
     Path(plot_path).parent.mkdir(parents=True, exist_ok=True)
-    
-    epochs = np.arange(len(losses)) * save_interval
+
+    epochs = np.arange(1, len(losses) + 1)
     
     plt.figure(figsize=(10, 6))
     plt.plot(epochs, losses, linewidth=2)
